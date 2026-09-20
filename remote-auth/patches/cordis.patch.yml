@@ -1,0 +1,32 @@
+# @dsh-ext/remote-auth — account/password gate for remote-domain access.
+#
+# Pairs with @dsh-ext/remote-access: append this entry to the profile's user
+# patch layer AFTER the remote-access row, so this plugin activates later and
+# wraps the already-patched `connection.requestRejection` /
+# `connection.authorizeIndex` (credential gate first, then the Host/Origin
+# fence).
+#
+# 1. Generate the credential entry (the plaintext password is NOT stored):
+#
+#      node /path/to/remote-auth/make-password.mjs --user <username>
+#
+# 2. Paste the printed `name` / `salt` / `hash` below.
+#
+# SECURITY: a valid credential operates this harness fully (and, when
+# remote-access has `injectTransport: true`, can write the host's settings /
+# credential files). Loopback callers are exempt by default; set
+# `allowLoopbackNoAuth: false` to gate them too.
+
+- insert:
+  - id: remote-auth
+    name: '@dsh-ext/remote-auth'
+    inject: [connection]
+    config:
+      realm: dsh
+      allowLoopbackNoAuth: true
+      logDecisions: false
+      authUsers:
+        # Replace with the output of `make-password.mjs`.
+        - name: '<username>'
+          salt: <from make-password.mjs>
+          hash: <from make-password.mjs>

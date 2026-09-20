@@ -1,0 +1,26 @@
+{
+  "name": "@dsh-ext/remote-auth",
+  "version": "1.0.0",
+  "description": "dsh plugin: account/password gate for remote-domain access, layered on top of @dsh-ext/remote-access.",
+  "type": "module",
+  "main": "index.js",
+  "exports": {
+    ".": "./index.js",
+    "./package.json": "./package.json"
+  },
+  "files": [
+    "index.js",
+    "make-password.mjs",
+    "test"
+  ],
+  "scripts": {
+    "test": "node test/apply.test.mjs",
+    "make-password": "node make-password.mjs"
+  },
+  "dsh": {
+    "plugin": {
+      "description": "Account/password gate for remote-domain dsh web access; layers on top of @dsh-ext/remote-access. Loopback stays token-free; remote callers must present Basic credentials."
+    }
+  },
+  "license": "MIT"
+}

@@ -1,0 +1,25 @@
+{
+  "name": "@dsh-ext/remote-access",
+  "version": "1.0.0",
+  "description": "dsh web plugin: serve the DeepSeek Harness Web GUI through a remote domain without a launch token (Host fence stays, browser authentication is skipped)",
+  "type": "module",
+  "main": "index.js",
+  "exports": {
+    ".": "./index.js",
+    "./package.json": "./package.json"
+  },
+  "files": [
+    "index.js",
+    "patches",
+    "test"
+  ],
+  "scripts": {
+    "test": "node test/match.test.mjs && node test/apply.test.mjs && node test/patch.test.mjs"
+  },
+  "dsh": {
+    "plugin": {
+      "description": "Serve the dsh web profile through a remote domain without a launch token (Host fence kept, browser auth skipped)"
+    }
+  },
+  "license": "MIT"
+}

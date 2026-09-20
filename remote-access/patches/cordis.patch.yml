@@ -1,0 +1,65 @@
+# @dsh-ext/remote-access — remote-domain access without a launch token.
+#
+# Append these entries to the profile's user patch layer
+# (~/.dsh/profiles/web/cordis.patch.yml) or pass this file as a `--patch`
+# overlay:  dsh --profile web --patch ./patches/cordis.patch.yml
+#
+# Two facts of the stock composition this relies on:
+#   - the `webserver` row's schema only accepts the literals 127.0.0.1 /
+#     0.0.0.0, and startup refuses the `--host 0.0.0.0` flag — so the
+#     all-interfaces bind can only come from a patch layer like this one;
+#   - when the bind is 0.0.0.0, dsh-web-app's resolveLanTrust puts every
+#     non-internal IPv4 address of the box into ctx.webRuntime.trustedHosts,
+#     which the `connection` row already consumes — LAN IP access works
+#     without any extra entry here.
+#
+# SECURITY: this removes the browser authentication layer. Anyone who can
+# reach the port with a trusted Host header operates this harness. Only
+# point a domain at it through a tunnel or trusted network.
+
+- id: webserver
+  config:
+    host: 0.0.0.0
+    # Respect the app's `--port` flag (the stock row's webStartup expression);
+    # fall back to 3080.
+    port: !!js ctx.webStartup.port ?? 3080
+    compression: gzip
+    compressionLevel: 1
+    compressionThresholdBytes: 1024
+
+- insert:
+    # The plugin itself: fence-only request handling over the connection
+    # service (Host/Origin checks kept, launch-token/cookie 401 dropped).
+    # Edit `allowedHosts` to every domain that should reach this instance
+    # (bare host = any port, host:port = exact, *.suffix = wildcard).
+    #
+    # `trustedClientNets` is the proxy-trust path: a request whose TCP
+    # source (req.socket.remoteAddress) is in one of these CIDRs is
+    # accepted for ANY Host header. A reverse tunnel that terminates TLS
+    # at your-domain.example and forwards to 127.0.0.1:3080 sends its own
+    # upstream Host (not the public domain), so the Host fence alone 403s
+    # it — trusting the source IP instead is what makes the domain work.
+    # Default = loopback + RFC1918 private ranges; use ["0.0.0.0/0"] to
+    # trust every source (only when the port is reachable solely through
+    # your own tunnel).
+    - id: remote-access
+      name: '@dsh-ext/remote-access'
+      inject: [connection]
+      config:
+        allowedHosts:
+          - your-domain.example
+        allowLoopback: true
+        allowLan: true
+        trustedClientNets:
+          - 127.0.0.1/32
+          - 10.0.0.0/8
+          - 172.16.0.0/12
+          - 192.168.0.0/16
+        # Keep settings / credentials on host persistence for the remote
+        # domain: injects __DSH_TRANSPORT__ = { ownsHost: true } into the
+        # served index.html so the browser's isLoopback check passes for a
+        # public domain instead of degrading to memory persistence.
+        # SECURITY: a remote page can now write this host's settings and
+        # credential files — gated only by allowedHosts / trustedClientNets.
+        injectTransport: true
+        logDecisions: false
